@@ -27,6 +27,9 @@
 3. **Убедитесь, что установлен Google Chrome**
 4. **Запустите** `PP-Parser.exe`
 
+<img width="473" height="360" alt="image" src="https://github.com/user-attachments/assets/ca82b3db-fecf-4cfa-8095-86bfaabf24c5" />
+
+
 ### Способ 2: Установка из исходного кода
 
 #### Требования:
