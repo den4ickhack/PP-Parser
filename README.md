@@ -13,6 +13,9 @@
 
 Ускорит процесс создания отчета в 10 раз.
 
+<img width="1032" height="486" alt="image" src="https://github.com/user-attachments/assets/db842688-82ee-4302-a88d-6fd980494910" />
+
+
 ## 📦 Установка
 
 # ПЕРЕД ИСПОЛЬЗОВАНИЕМ убедитесь что у вас установлен Chrome классическим способом.
@@ -38,4 +41,3 @@
 git clone https://github.com/ваш-username/PP-Parser.git
 cd PP-Parser
 
-<img width="1032" height="486" alt="image" src="https://github.com/user-attachments/assets/fa91cb12-aeb6-4638-85e9-1cefdb91bc2e" />
