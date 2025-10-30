@@ -37,3 +37,5 @@
 ```bash
 git clone https://github.com/ваш-username/PP-Parser.git
 cd PP-Parser
+
+<img width="1032" height="486" alt="image" src="https://github.com/user-attachments/assets/fa91cb12-aeb6-4638-85e9-1cefdb91bc2e" />
