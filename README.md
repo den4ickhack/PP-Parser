@@ -43,4 +43,7 @@
 ```bash
 git clone https://github.com/ваш-username/PP-Parser.git
 cd PP-Parser
+```
 
+# После чего запускаете файл в dist - PP-Parser.exe
+# Обращайте внимание на настройки времени и СП перед запуском.
