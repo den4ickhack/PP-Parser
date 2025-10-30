@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 966|Syndicate | UZS |PayPort 5457
 921|Syed Mohsin Ali | PKR |PayPort
 944|stil_list|TJS|PayPort 5405
@@ -73,4 +74,81 @@
 830|Archi Team 3[UAH]
 829|Archi Team 2[UAH]
 971|Revolution Team [UAH] 2
+=======
+966|Syndicate | UZS |PayPort 5457
+921|Syed Mohsin Ali | PKR |PayPort
+944|stil_list|TJS|PayPort 5405
+894|rich_brothers|UZS|
+976|rich_brothers|KGS|
+952|blvck|UZS|PayPort
+785|Triangle_QR
+949|Vl ll KGS ll PayPort
+722|UAH_IBAN_Payouts
+376|Team_UKR_Bumblebee
+922|Team_Tether_UKR 2 | PayPort
+687|Payout_RUB_2.0
+857|Sher |RUB|
+899|Revolution Team |UAH|
+963|Rapira_OUT
+278|RUB_gordeev
+827|RS_KRW_OUT
+381|QR СБП
+550|NurGroup_Team_UZS
+910|Iskander_KZT
+742|Ipay KRW
+656|Hawak Mew INR
+337|Team_RUB_8074a
+583|Double_UZS\RUB_ Team
+352|Double_Rub_Team
+745|Dm team|UAH|
+800|Dm team 2|UAH|
+893|Dava Tram|UAH|
+552|Triada_Team_RUB
+956|Double_UZS_OUT
+686|Genesy UAH
+918|Bummer_group_UAH
+898|Archi Team 4 |UAH|
+737|ARSpay UZS
+80|Egypt new
+684|CashRF
+81|EgyptSpecial 2
+314|Egypt_1_man
+530|Zakutok_Team_UKR
+767|Arthur+Cosmolot_2
+833|Traffic Monsters|UAH|
+920|Traffic Monsters Junior|UAH|
+806|Dm team 3|UAH|
+778|Billguard UAH
+790|1kk | UAH | PayPort
+810|Albom_Team_UKR_2
+126|UkraineLUX
+364|Team_KGS_123 |RUB/KGS| PayPort
+979|First Cash | AED |PayPort 5520
+801|Shavkat|TJS|
+975|Double_KGS_PayOut
+972|A1C & Payport KGS
+394|Albom_Team_UKR
+659|CropCrew
+964|Gordeev_RUB_Rapira
+897|Xerox|PKR|Payport
+855|Real Duka KRW
+844|Azizjzane |RUB|
+947|Double_Rub_Test
+784|StakeStorm|EGP|
+612|Pakistan Rauf71_fiat
+493|M1TEAM_UZS
+315|NewGeneration
+501|Payport Бахром UZS
+924|Jeya | INR |PayPort 5359
+858|Team_Crystal_UKR_noRate
+888|Fake_UZS_SP
+711|UkraineBummer_no_rate
+768|Arthur+Cosmolot_3
+239|RubEXCHwKYC-2
+593|Forge_team
+781|Archi Team[UAH]
+830|Archi Team 3[UAH]
+829|Archi Team 2[UAH]
+971|Revolution Team [UAH] 2
+>>>>>>> 5c94db3700db97a0372d54c73a98a985897bdc0e
 734|Arthur+Cosmolot
