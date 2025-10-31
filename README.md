@@ -41,7 +41,7 @@
 
 1. **Клонируйте репозиторий:**
 ```bash
-git clone https://github.com/ваш-username/PP-Parser.git
+git clone https://github.com/den4ickhack/PP-Parser.git
 cd PP-Parser
 ```
 
