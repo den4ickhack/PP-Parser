@@ -18,6 +18,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import platform
+import json
 
 BASE_URL_SPEED = "https://servicedesk.service-online.live/traders-speed"
 BASE_URL_ADS = "https://servicedesk.service-online.live/trader/ads"
@@ -33,35 +34,64 @@ def load_service_providers():
         file_path = os.path.join(script_dir, "service_providers.txt")
         
         if not os.path.exists(file_path):
-            raise FileNotFoundError("Файл service_providers.txt не найден")
+            # Создаем файл, если он не существует
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write("# Service Providers list\n")
+            return {}
         
         providers = {}
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
-                if line and '|' in line:
+                if line and '|' in line and not line.startswith('#'):
                     sp_id, sp_name = line.split('|', 1)
                     providers[int(sp_id.strip())] = sp_name.strip()
         
-        if not providers:
-            raise ValueError("Файл service_providers.txt пуст или имеет неверный формат")
-            
         return providers
         
     except Exception as e:
         messagebox.showerror("Ошибка", f"Не удалось загрузить список СП: {str(e)}")
-        return None
+        return {}
 
 SERVICE_PROVIDERS = load_service_providers()
-if SERVICE_PROVIDERS is None:
-    exit()
 
-EMPLOYEE_GROUPS = {
-    "Помаз-Браташ-Радионова-Журавский": [687, 612, 827, 963, 711, 767, 734, 768, 684, 239, 80, 81, 278, 910, 126, 964, 501, 314, 583, 956, 352, 947, 975, 337],
-    "Сазыкина-Каменева-Радионова-Журавский": [315, 790, 894, 381, 976, 922, 778, 844, 949, 944, 659, 857, 376, 686, 801, 364, 593, 979],
-    "Перетрухин-Цыганков-Мамедов-Рябенкова": [855, 742, 493, 376, 737, 552, 897, 394, 810, 784, 858, 785, 952, 924, 656, 972, 921, 966],
-    "Талгат-Юхновец-Мамедов-Болотов": [898, 893, 899, 550, 737, 920, 833, 722, 806, 530, 800, 745, 888]
-}
+def load_employee_groups():
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(script_dir, "employee_groups.json")
+        
+        if not os.path.exists(file_path):
+            # Создаем файл с группами по умолчанию
+            default_groups = {
+                "Помаз-Браташ-Радионова-Журавский": [687, 612, 827, 963, 711, 767, 734, 768, 684, 239, 80, 81, 278, 910, 126, 964, 501, 314, 583, 956, 352, 947, 975, 337],
+                "Сазыкина-Каменева-Радионова-Журавский": [315, 790, 894, 381, 976, 922, 778, 844, 949, 944, 659, 857, 376, 686, 801, 364, 593, 979],
+                "Перетрухин-Цыганков-Мамедов-Рябенкова": [855, 742, 493, 376, 737, 552, 897, 394, 810, 784, 858, 785, 952, 924, 656, 972, 921, 966],
+                "Талгат-Юхновец-Мамедов-Болотов": [898, 893, 899, 550, 737, 920, 833, 722, 806, 530, 800, 745, 888]
+            }
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(default_groups, f, ensure_ascii=False, indent=2)
+            return default_groups
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+            
+    except Exception as e:
+        messagebox.showerror("Ошибка", f"Не удалось загрузить группы сотрудников: {str(e)}")
+        return {}
+
+def save_employee_groups(groups):
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(script_dir, "employee_groups.json")
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(groups, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        messagebox.showerror("Ошибка", f"Не удалось сохранить группы сотрудников: {str(e)}")
+        return False
+
+EMPLOYEE_GROUPS = load_employee_groups()
 
 def is_chrome_ready(port=DEBUGGING_PORT, host='127.0.0.1', timeout=1):
     try:
@@ -150,11 +180,9 @@ class ModernSPFrame(ttk.Frame):
         self.all_sp_ids = list(SERVICE_PROVIDERS.keys())
         self.filtered_sp_ids = self.all_sp_ids.copy()
         
-        self.sp_group_cache = {}
-        
+        # Убрали кэш групп, чтобы всегда получать актуальные данные
         self.name_filter_var = tk.StringVar()
         self.employee_group_var = tk.StringVar(value="Все группы")
-        self.only_selected_var = tk.BooleanVar(value=False)
         
         self.filter_update_job = None
         
@@ -171,25 +199,21 @@ class ModernSPFrame(ttk.Frame):
         filter_row1 = ttk.Frame(filter_frame)
         filter_row1.pack(fill=tk.X, pady=5)
         
-        ttk.Label(filter_row1, text="Поиск по названию:").pack(side=tk.LEFT, padx=(0, 5))
-        self.name_entry = ttk.Entry(filter_row1, textvariable=self.name_filter_var, width=30)
-        self.name_entry.pack(side=tk.LEFT, padx=(0, 15))
+        ttk.Label(filter_row1, text="Поиск:").pack(side=tk.LEFT, padx=(0, 5))
+        self.name_entry = ttk.Entry(filter_row1, textvariable=self.name_filter_var, width=20)
+        self.name_entry.pack(side=tk.LEFT, padx=(0, 10))
         
-        ttk.Label(filter_row1, text="Группа сотрудников:").pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Label(filter_row1, text="Группа:").pack(side=tk.LEFT, padx=(0, 5))
         employee_groups = ["Все группы"] + list(EMPLOYEE_GROUPS.keys())
         self.employee_combo = ttk.Combobox(filter_row1, textvariable=self.employee_group_var, 
-                                     values=employee_groups, width=30, state="readonly")
-        self.employee_combo.pack(side=tk.LEFT, padx=(0, 15))
+                                     values=employee_groups, width=20, state="readonly")
+        self.employee_combo.pack(side=tk.LEFT, padx=(0, 10))
         
         filter_row2 = ttk.Frame(filter_frame)
         filter_row2.pack(fill=tk.X, pady=5)
         
-        self.only_selected_cb = ttk.Checkbutton(filter_row2, text="Показывать только выбранные", 
-                       variable=self.only_selected_var)
-        self.only_selected_cb.pack(side=tk.LEFT, padx=(0, 15))
-        
-        ttk.Button(filter_row2, text="🧹 Сбросить фильтры", 
-                  command=self.clear_filters).pack(side=tk.LEFT, padx=(0, 15))
+        ttk.Button(filter_row2, text="🧹 Сбросить", 
+                  command=self.clear_filters).pack(side=tk.LEFT, padx=(0, 10))
         
         self.filter_info_var = tk.StringVar(value=f"Всего СП: {len(self.all_sp_ids)}")
         ttk.Label(filter_frame, textvariable=self.filter_info_var, 
@@ -213,24 +237,23 @@ class ModernSPFrame(ttk.Frame):
     def setup_filter_bindings(self):
         self.name_entry.bind('<KeyRelease>', self.schedule_filter_update)
         self.employee_combo.bind('<<ComboboxSelected>>', self.schedule_filter_update)
-        self.only_selected_cb.configure(command=self.schedule_filter_update)
     
     def setup_sp_treeview(self, parent):
         tree_frame = ttk.Frame(parent)
         tree_frame.pack(fill=tk.BOTH, expand=True)
         
         columns = ("selected", "id", "name", "group")
-        self.tree = ttk.Treeview(tree_frame, columns=columns, show="tree headings", height=15)
+        self.tree = ttk.Treeview(tree_frame, columns=columns, show="tree headings", height=12)
         
-        self.tree.heading("selected", text=" ✅ ВЫБОР")
+        self.tree.heading("selected", text="✅")
         self.tree.heading("id", text="ID")
         self.tree.heading("name", text="Название СП")
         self.tree.heading("group", text="Группа")
         
-        self.tree.column("selected", width=100, anchor="center")
-        self.tree.column("id", width=60, anchor="center")
-        self.tree.column("name", width=300, anchor="w")
-        self.tree.column("group", width=200, anchor="w")
+        self.tree.column("selected", width=60, anchor="center")
+        self.tree.column("id", width=50, anchor="center")
+        self.tree.column("name", width=250, anchor="w")
+        self.tree.column("group", width=150, anchor="w")
         
         v_scroll = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.tree.yview)
         h_scroll = ttk.Scrollbar(tree_frame, orient=tk.HORIZONTAL, command=self.tree.xview)
@@ -248,29 +271,21 @@ class ModernSPFrame(ttk.Frame):
         self.refresh_tree()
     
     def get_sp_group(self, sp_id):
-        if sp_id in self.sp_group_cache:
-            return self.sp_group_cache[sp_id]
-        
+        # Убрали кэширование, чтобы всегда получать актуальные данные
         for group, sp_ids in EMPLOYEE_GROUPS.items():
             if sp_id in sp_ids:
-                self.sp_group_cache[sp_id] = group
                 return group
-        
-        self.sp_group_cache[sp_id] = "Не распределен"
         return "Не распределен"
     
     def should_show_sp(self, sp_id, sp_name, filters):
-        is_selected = self.sp_vars[sp_id].get()
-        
         name_match = not filters['name'] or filters['name'] in sp_name.lower()
-        selected_match = not filters['only_selected'] or is_selected
         
         group_match = True
         if filters['employee_group'] != "Все группы":
             sp_group = self.get_sp_group(sp_id)
             group_match = sp_group == filters['employee_group']
         
-        return all([name_match, selected_match, group_match]), is_selected
+        return all([name_match, group_match])
     
     def refresh_tree(self):
         for item in self.tree.get_children():
@@ -278,8 +293,7 @@ class ModernSPFrame(ttk.Frame):
         
         filters = {
             'name': self.name_filter_var.get().lower().strip(),
-            'employee_group': self.employee_group_var.get(),
-            'only_selected': self.only_selected_var.get()
+            'employee_group': self.employee_group_var.get()
         }
         
         self.filtered_sp_ids = []
@@ -287,7 +301,8 @@ class ModernSPFrame(ttk.Frame):
         selected_count = 0
         
         for sp_id, sp_name in SERVICE_PROVIDERS.items():
-            should_show, is_selected = self.should_show_sp(sp_id, sp_name, filters)
+            should_show = self.should_show_sp(sp_id, sp_name, filters)
+            is_selected = self.sp_vars[sp_id].get()
             
             if is_selected:
                 selected_count += 1
@@ -334,7 +349,6 @@ class ModernSPFrame(ttk.Frame):
     def clear_filters(self):
         self.name_filter_var.set("")
         self.employee_group_var.set("Все группы")
-        self.only_selected_var.set(False)
         self.refresh_tree()
         self.log_callback("🧹 Все фильтры сброшены")
     
@@ -359,7 +373,18 @@ class ModernSPFrame(ttk.Frame):
         
         self.refresh_tree()
         self.log_callback(f"⭐ Выбраны отфильтрованные СП: {len(self.filtered_sp_ids)}")
-
+    
+    def update_service_providers(self, new_service_providers, new_sp_vars):
+        """Обновить список СП в интерфейсе"""
+        self.sp_vars = new_sp_vars
+        self.all_sp_ids = list(new_service_providers.keys())
+        self.filtered_sp_ids = self.all_sp_ids.copy()
+        self.refresh_tree()
+        self.log_callback(f"🔄 Список СП обновлен: {len(self.all_sp_ids)} providers")
+    
+    def refresh_groups_display(self):
+        """Обновить отображение групп для всех СП"""
+        self.refresh_tree()
 class TimeFrame(ttk.LabelFrame):
     def __init__(self, parent, log_callback):
         super().__init__(parent, text="🕒 Временные промежутки", padding=10)
@@ -393,21 +418,21 @@ class TimeFrame(ttk.LabelFrame):
         time_grid = ttk.Frame(self)
         time_grid.pack(fill=tk.X)
         
-        ttk.Label(time_grid, text="", width=12).grid(row=0, column=0, padx=2, pady=2)
-        ttk.Label(time_grid, text="От", width=20).grid(row=0, column=1, padx=2, pady=2)
-        ttk.Label(time_grid, text="До", width=20).grid(row=0, column=2, padx=2, pady=2)
+        ttk.Label(time_grid, text="", width=8).grid(row=0, column=0, padx=2, pady=2)
+        ttk.Label(time_grid, text="От", width=15).grid(row=0, column=1, padx=2, pady=2)
+        ttk.Label(time_grid, text="До", width=15).grid(row=0, column=2, padx=2, pady=2)
         
         ttk.Label(time_grid, text="Скорость:").grid(row=1, column=0, padx=2, pady=2, sticky=tk.W)
-        ttk.Entry(time_grid, textvariable=self.speed_from_var, width=20).grid(row=1, column=1, padx=2, pady=2)
-        ttk.Entry(time_grid, textvariable=self.speed_to_var, width=20).grid(row=1, column=2, padx=2, pady=2)
+        ttk.Entry(time_grid, textvariable=self.speed_from_var, width=15).grid(row=1, column=1, padx=2, pady=2)
+        ttk.Entry(time_grid, textvariable=self.speed_to_var, width=15).grid(row=1, column=2, padx=2, pady=2)
         
         ttk.Label(time_grid, text="Конверсия:").grid(row=2, column=0, padx=2, pady=2, sticky=tk.W)
-        ttk.Entry(time_grid, textvariable=self.conversion_from_var, width=20).grid(row=2, column=1, padx=2, pady=2)
-        ttk.Entry(time_grid, textvariable=self.conversion_to_var, width=20).grid(row=2, column=2, padx=2, pady=2)
+        ttk.Entry(time_grid, textvariable=self.conversion_from_var, width=15).grid(row=2, column=1, padx=2, pady=2)
+        ttk.Entry(time_grid, textvariable=self.conversion_to_var, width=15).grid(row=2, column=2, padx=2, pady=2)
         
         ttk.Label(time_grid, text="Арбитражи:").grid(row=3, column=0, padx=2, pady=2, sticky=tk.W)
-        ttk.Entry(time_grid, textvariable=self.arbitrage_from_var, width=20).grid(row=3, column=1, padx=2, pady=2)
-        ttk.Entry(time_grid, textvariable=self.arbitrage_to_var, width=20).grid(row=3, column=2, padx=2, pady=2)
+        ttk.Entry(time_grid, textvariable=self.arbitrage_from_var, width=15).grid(row=3, column=1, padx=2, pady=2)
+        ttk.Entry(time_grid, textvariable=self.arbitrage_to_var, width=15).grid(row=3, column=2, padx=2, pady=2)
         
         button_frame = ttk.Frame(self)
         button_frame.pack(fill=tk.X, pady=(10, 0))
@@ -440,12 +465,153 @@ class TimeFrame(ttk.LabelFrame):
         
         self.log_callback(f"⏰ Установлено текущее время: {current_time}")
 
+class GroupManagementFrame(ttk.LabelFrame):
+    def __init__(self, parent, log_callback, main_app):
+        super().__init__(parent, text="👥 Управление группами", padding=10)
+        self.log_callback = log_callback
+        self.main_app = main_app  # Сохраняем ссылку на главное приложение
+        self.setup_ui()
+    
+    def setup_ui(self):
+        # Верхняя панель с управлением группами
+        group_control_frame = ttk.Frame(self)
+        group_control_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        ttk.Label(group_control_frame, text="Группа:").pack(side=tk.LEFT, padx=(0, 5))
+        self.group_var = tk.StringVar()
+        self.group_combo = ttk.Combobox(group_control_frame, textvariable=self.group_var, 
+                                       values=list(EMPLOYEE_GROUPS.keys()), width=25, state="readonly")  # Увеличил ширину
+        self.group_combo.pack(side=tk.LEFT, padx=(0, 10))
+        self.group_combo.bind('<<ComboboxSelected>>', self.on_group_selected)
+        
+        ttk.Button(group_control_frame, text="➕ Новая", 
+                  command=self.add_new_group).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(group_control_frame, text="✏️ Переим.", 
+                  command=self.rename_group).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(group_control_frame, text="🗑️ Удалить", 
+                  command=self.delete_group).pack(side=tk.LEFT, padx=(0, 5))
+        
+        # Поля для редактирования названия группы
+        rename_frame = ttk.Frame(self)
+        rename_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        ttk.Label(rename_frame, text="Новое название:").pack(side=tk.LEFT, padx=(0, 5))
+        self.new_group_name_var = tk.StringVar()
+        self.new_group_name_entry = ttk.Entry(rename_frame, textvariable=self.new_group_name_var, width=30)  # Увеличил ширину
+        self.new_group_name_entry.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Панель управления СП в группе (ТОЛЬКО КНОПКА ДОБАВЛЕНИЯ)
+        sp_management_frame = ttk.Frame(self)
+        sp_management_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        ttk.Button(sp_management_frame, text="➕ Добавить выбранные", 
+                  command=self.add_selected_to_group).pack(side=tk.LEFT, padx=(0, 10))
+    
+    def on_group_selected(self, event=None):
+        # Метод оставлен для совместимости, но больше не обновляет список СП
+        pass
+    
+    def update_group_sp_list(self):
+        # Метод оставлен пустым, так как список СП больше не отображается
+        pass
+    
+    def add_new_group(self):
+        new_name = self.new_group_name_var.get().strip()
+        if not new_name:
+            messagebox.showwarning("Внимание", "Введите название новой группы!")
+            return
+        
+        if new_name in EMPLOYEE_GROUPS:
+            messagebox.showwarning("Внимание", "Группа с таким названием уже существует!")
+            return
+        
+        EMPLOYEE_GROUPS[new_name] = []
+        if save_employee_groups(EMPLOYEE_GROUPS):
+            self.group_combo['values'] = list(EMPLOYEE_GROUPS.keys())
+            self.group_var.set(new_name)
+            self.new_group_name_var.set("")
+            # Обновляем комбобокс в основном интерфейсе
+            self.main_app.sp_frame.employee_combo['values'] = ["Все группы"] + list(EMPLOYEE_GROUPS.keys())
+            self.log_callback(f"✅ Добавлена новая группа: {new_name}")
+    
+    def rename_group(self):
+        old_name = self.group_var.get()
+        new_name = self.new_group_name_var.get().strip()
+        
+        if not old_name:
+            messagebox.showwarning("Внимание", "Выберите группу для переименования!")
+            return
+        
+        if not new_name:
+            messagebox.showwarning("Внимание", "Введите новое название группы!")
+            return
+        
+        if new_name in EMPLOYEE_GROUPS:
+            messagebox.showwarning("Внимание", "Группа с таким названием уже существует!")
+            return
+        
+        EMPLOYEE_GROUPS[new_name] = EMPLOYEE_GROUPS.pop(old_name)
+        if save_employee_groups(EMPLOYEE_GROUPS):
+            self.group_combo['values'] = list(EMPLOYEE_GROUPS.keys())
+            self.group_var.set(new_name)
+            self.new_group_name_var.set("")
+            # Обновляем комбобокс в основном интерфейсе
+            self.main_app.sp_frame.employee_combo['values'] = ["Все группы"] + list(EMPLOYEE_GROUPS.keys())
+            self.log_callback(f"✏️ Группа переименована: {old_name} -> {new_name}")
+    
+    def delete_group(self):
+        group_name = self.group_var.get()
+        if not group_name:
+            messagebox.showwarning("Внимание", "Выберите группу для удаления!")
+            return
+        
+        result = messagebox.askyesno("Подтверждение", 
+                                   f"Вы уверены, что хотите удалить группу '{group_name}'?")
+        if not result:
+            return
+        
+        del EMPLOYEE_GROUPS[group_name]
+        if save_employee_groups(EMPLOYEE_GROUPS):
+            self.group_combo['values'] = list(EMPLOYEE_GROUPS.keys())
+            self.group_var.set("")
+            # Обновляем комбобокс в основном интерфейсе
+            self.main_app.sp_frame.employee_combo['values'] = ["Все группы"] + list(EMPLOYEE_GROUPS.keys())
+            self.log_callback(f"🗑️ Удалена группа: {group_name}")
+    
+    def add_selected_to_group(self):
+        group_name = self.group_var.get()
+        if not group_name:
+            messagebox.showwarning("Внимание", "Выберите группу!")
+            return
+        
+        # Используем ссылку на главное приложение для получения выбранных СП
+        if self.main_app and hasattr(self.main_app, 'get_selected_sps'):
+            selected_sps = self.main_app.get_selected_sps()
+            if not selected_sps:
+                messagebox.showwarning("Внимание", "Не выбран ни один СП!")
+                return
+            
+            added_count = 0
+            for sp_id in selected_sps.keys():
+                if sp_id not in EMPLOYEE_GROUPS[group_name]:
+                    EMPLOYEE_GROUPS[group_name].append(sp_id)
+                    added_count += 1
+            
+            if added_count > 0:
+                if save_employee_groups(EMPLOYEE_GROUPS):
+                    # ОБНОВЛЯЕМ ОТОБРАЖЕНИЕ ГРУПП В ОСНОВНОМ ИНТЕРФЕЙСЕ
+                    self.main_app.sp_frame.refresh_tree()
+                    self.log_callback(f"✅ Добавлено {added_count} СП в группу '{group_name}'")
+            else:
+                messagebox.showinfo("Информация", "Все выбранные СП уже находятся в этой группе!")
+        else:
+            messagebox.showerror("Ошибка", "Не удалось получить доступ к списку выбранных СП!")
 class PayportApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Payport SP Parser v10.7")
+        self.root.title("Payport SP Parser v10.8")
         self.root.geometry("1400x900")
-        self.root.minsize(1200, 800)
+        self.root.minsize(1000, 700)
         
         self.sp_vars = {sp_id: tk.BooleanVar(value=True) for sp_id in SERVICE_PROVIDERS.keys()}
         self.auto_no_incidents_var = tk.BooleanVar(value=True)
@@ -457,6 +623,7 @@ class PayportApp:
         self.last_reports_folder = None
         
         self.setup_ui()
+        self.setup_sp_management()
     
     def setup_ui(self):
         style = ttk.Style()
@@ -464,35 +631,64 @@ class PayportApp:
         style.configure("TLabelframe", padding=10)
         style.configure("TLabelframe.Label", font=("Arial", 10, "bold"))
         
-        main_paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        main_paned.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # Создаем основной контейнер с прокруткой
+        main_container = ttk.Frame(self.root)
+        main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        left_frame = ttk.Frame(main_paned)
-        main_paned.add(left_frame, weight=1)
+        # Создаем панель с вкладками вместо PanedWindow
+        notebook = ttk.Notebook(main_container)
+        notebook.pack(fill=tk.BOTH, expand=True)
         
-        right_frame = ttk.Frame(main_paned)
-        main_paned.add(right_frame, weight=1)
+        # Левая вкладка - основные функции
+        left_tab = ttk.Frame(notebook)
+        notebook.add(left_tab, text="📊 Основные функции")
         
-        self.setup_left_panel(left_frame)
-        self.setup_right_panel(right_frame)
+        # Правая вкладка - логи
+        right_tab = ttk.Frame(notebook)
+        notebook.add(right_tab, text="📝 Логи выполнения")
         
-        main_paned.sashpos(0, 900)
+        self.setup_left_panel(left_tab)
+        self.setup_right_panel(right_tab)
         
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
+        # Настройка весов для масштабирования
+        main_container.columnconfigure(0, weight=1)
+        main_container.rowconfigure(0, weight=1)
         
     def setup_left_panel(self, parent):
+        # Используем grid с весами для правильного масштабирования
         parent.columnconfigure(0, weight=1)
-        parent.rowconfigure(1, weight=1)
+        parent.columnconfigure(1, weight=1)
+        parent.rowconfigure(0, weight=0)  # Время
+        parent.rowconfigure(1, weight=0)  # Управление СП и группы
+        parent.rowconfigure(2, weight=1)  # СП получают наибольший вес
+        parent.rowconfigure(3, weight=0)  # Управление обработкой
         
+        # Временные промежутки - на самый верх
         self.time_frame = TimeFrame(parent, self.log)
-        self.time_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        self.time_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 10))
         
+        # Блок управления СП и группами - рядом
+        management_frame = ttk.Frame(parent)
+        management_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 10))
+        management_frame.columnconfigure(0, weight=1)
+        management_frame.columnconfigure(1, weight=1)
+        
+        # Управление СП - слева
+        self.sp_management_frame = ttk.LabelFrame(management_frame, text="🔧 Управление СП", padding=10)
+        self.sp_management_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
+        self.setup_sp_management_ui()
+        
+        # Управление группами - справа (ПЕРЕДАЕМ self КАК main_app)
+        self.group_frame = GroupManagementFrame(management_frame, self.log, self)
+        self.group_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
+        
+        # Список СП - под блоком управления
         self.sp_frame = ModernSPFrame(parent, self.sp_vars, self.log)
-        self.sp_frame.grid(row=1, column=0, sticky="nsew", pady=(0, 10))
+        self.sp_frame.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=(0, 10))
         
+        # Управление обработкой - внизу
         control_frame = ttk.LabelFrame(parent, text="🚀 Управление обработкой", padding=10)
-        control_frame.grid(row=2, column=0, sticky="ew")
+        control_frame.grid(row=3, column=0, columnspan=2, sticky="ew")
         
         settings_frame = ttk.Frame(control_frame)
         settings_frame.pack(fill=tk.X, pady=(0, 10))
@@ -541,6 +737,171 @@ class PayportApp:
         
         ttk.Button(log_control, text="🧹 Очистить логи", command=self.clear_logs).pack(side=tk.LEFT, padx=(0, 10))
         ttk.Button(log_control, text="💾 Сохранить логи", command=self.save_logs).pack(side=tk.LEFT)
+    
+    def setup_sp_management(self):
+        """Настройка управления СП - теперь это отдельный метод для инициализации переменных"""
+        pass
+    
+    def setup_sp_management_ui(self):
+        """Настройка UI управления СП"""
+        # Поля для ввода нового СП
+        input_frame = ttk.Frame(self.sp_management_frame)
+        input_frame.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(input_frame, text="ID:").pack(side=tk.LEFT, padx=(0, 5))
+        self.new_sp_id_var = tk.StringVar()
+        self.new_sp_id_entry = ttk.Entry(input_frame, textvariable=self.new_sp_id_var, width=8)
+        self.new_sp_id_entry.pack(side=tk.LEFT, padx=(0, 10))
+        
+        ttk.Label(input_frame, text="Название:").pack(side=tk.LEFT, padx=(0, 5))
+        self.new_sp_name_var = tk.StringVar()
+        self.new_sp_name_entry = ttk.Entry(input_frame, textvariable=self.new_sp_name_var, width=30)
+        self.new_sp_name_entry.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Кнопки управления
+        btn_frame = ttk.Frame(self.sp_management_frame)
+        btn_frame.pack(fill=tk.X, pady=5)
+        
+        ttk.Button(btn_frame, text="➕ Добавить СП", command=self.add_service_provider).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(btn_frame, text="➖ Удалить выбранные", command=self.delete_selected_providers).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(btn_frame, text="🔄 Обновить из файла", command=self.reload_service_providers).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(btn_frame, text="📝 Открыть файл СП", command=self.open_service_providers_file).pack(side=tk.LEFT)
+    
+    def add_service_provider(self):
+        """Добавить нового Service Provider"""
+        sp_id = self.new_sp_id_var.get().strip()
+        sp_name = self.new_sp_name_var.get().strip()
+        
+        if not sp_id or not sp_name:
+            messagebox.showerror("Ошибка", "Заполните ID и название СП!")
+            return
+        
+        try:
+            sp_id_int = int(sp_id)
+        except ValueError:
+            messagebox.showerror("Ошибка", "ID должен быть числом!")
+            return
+        
+        # Проверяем, существует ли уже такой ID
+        if sp_id_int in SERVICE_PROVIDERS:
+            result = messagebox.askyesno("Подтверждение", 
+                                       f"СП с ID {sp_id_int} уже существует:\n{SERVICE_PROVIDERS[sp_id_int]}\nЗаменить?")
+            if not result:
+                return
+        
+        # Добавляем в файл
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(script_dir, "service_providers.txt")
+            
+            with open(file_path, 'a', encoding='utf-8') as f:
+                f.write(f"\n{sp_id_int}|{sp_name}")
+            
+            # Обновляем глобальные переменные
+            SERVICE_PROVIDERS[sp_id_int] = sp_name
+            self.sp_vars[sp_id_int] = tk.BooleanVar(value=True)
+            
+            # Обновляем интерфейс
+            self.sp_frame.update_service_providers(SERVICE_PROVIDERS, self.sp_vars)
+            
+            # Очищаем поля ввода
+            self.new_sp_id_var.set("")
+            self.new_sp_name_var.set("")
+            
+            self.log(f"✅ Добавлен СП: {sp_name} (ID {sp_id_int})")
+            
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось добавить СП: {str(e)}")
+    
+    def delete_selected_providers(self):
+        """Удалить выбранные Service Providers"""
+        selected_sps = self.get_selected_sps()
+        if not selected_sps:
+            messagebox.showwarning("Внимание", "Не выбран ни один Service Provider для удаления!")
+            return
+        
+        sp_list = "\n".join([f"ID {sp_id}: {sp_name}" for sp_id, sp_name in selected_sps.items()])
+        result = messagebox.askyesno("Подтверждение удаления", 
+                                   f"Вы уверены, что хотите удалить следующие СП?\n\n{sp_list}")
+        
+        if not result:
+            return
+        
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(script_dir, "service_providers.txt")
+            
+            # Читаем текущий файл
+            with open(file_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+            
+            # Записываем обратно все строки, кроме удаляемых СП
+            with open(file_path, 'w', encoding='utf-8') as f:
+                for line in lines:
+                    line = line.strip()
+                    if line and '|' in line:
+                        current_id, current_name = line.split('|', 1)
+                        current_id = current_id.strip()
+                        try:
+                            if int(current_id) not in selected_sps:
+                                f.write(line + '\n')
+                        except ValueError:
+                            f.write(line + '\n')
+            
+            # Обновляем глобальные переменные
+            for sp_id in selected_sps.keys():
+                if sp_id in SERVICE_PROVIDERS:
+                    del SERVICE_PROVIDERS[sp_id]
+                if sp_id in self.sp_vars:
+                    del self.sp_vars[sp_id]
+            
+            # Обновляем интерфейс
+            self.sp_frame.update_service_providers(SERVICE_PROVIDERS, self.sp_vars)
+            
+            self.log(f"✅ Удалено СП: {len(selected_sps)} шт.")
+            
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось удалить СП: {str(e)}")
+    
+    def reload_service_providers(self):
+        """Перезагрузить список СП из файла"""
+        global SERVICE_PROVIDERS
+        
+        try:
+            new_providers = load_service_providers()
+            if new_providers is not None:
+                SERVICE_PROVIDERS = new_providers
+                
+                # Обновляем sp_vars
+                self.sp_vars = {sp_id: tk.BooleanVar(value=True) for sp_id in SERVICE_PROVIDERS.keys()}
+                
+                # Обновляем интерфейс
+                self.sp_frame.update_service_providers(SERVICE_PROVIDERS, self.sp_vars)
+                
+                self.log("✅ Список СП обновлен из файла")
+            else:
+                self.log("❌ Ошибка при загрузке списка СП")
+                
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось обновить список СП: {str(e)}")
+    
+    def open_service_providers_file(self):
+        """Открыть файл service_providers.txt для редактирования"""
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(script_dir, "service_providers.txt")
+            
+            if platform.system() == "Windows":
+                os.startfile(file_path)
+            elif platform.system() == "Darwin":
+                subprocess.Popen(["open", file_path])
+            else:
+                subprocess.Popen(["xdg-open", file_path])
+                
+            self.log("📝 Открыт файл service_providers.txt для редактирования")
+            
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось открыть файл: {str(e)}")
     
     def open_last_reports_folder(self):
         if self.last_reports_folder and os.path.exists(self.last_reports_folder):
