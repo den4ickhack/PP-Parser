@@ -1,0 +1,33 @@
+Отчет по СП: Payout_RUB_2.0
+==================================================
+1. Скорость:
+- Общая: 8.77 мин. (172 сделок)
+- Payout_PP_trader_22: sell 0, buy 10.17 (21 сделок)
+- Payout_PP_trader_26: sell 0, buy 8.57 (17 сделок)
+- Payout_PP_trader_28: sell 0, buy 7.89 (16 сделок)
+- Payout_PP_trader_5: sell 0, buy 6.6 (12 сделок)
+- Payout_PP_trader_29: sell 0, buy 6.75 (12 сделок)
+- Payout_low_4: sell 0, buy 7.44 (11 сделок)
+- Payout_PP_trader_0: sell 0, buy 12.26 (10 сделок)
+- Payout_PP_trader_4: sell 0, buy 9.71 (9 сделок)
+- Payout_PP_trader_16: sell 0, buy 4.98 (9 сделок)
+- Payout_PP_trader_24: sell 0, buy 9.94 (9 сделок)
+- Payout_PP_trader_25: sell 0, buy 7.16 (8 сделок)
+- Payout_low_3: sell 0, buy 17.62 (8 сделок)
+- Payout_PP_trader_8: sell 0, buy 7.23 (7 сделок)
+- Payout_PP_trader_6: sell 0, buy 7.38 (6 сделок)
+- Payout_PP_trader_15: sell 0, buy 4.98 (6 сделок)
+- Payout_PP_trader_7: sell 0, buy 10.59 (3 сделок)
+- Payout_PP_trader_23: sell 0, buy 9.49 (3 сделок)
+- Payout_PP_trader_3: sell 0, buy 15.08 (2 сделок)
+- Payout_PP_trader_11: sell 0, buy 9.03 (2 сделок)
+- Payout_PP_trader_18: sell 0, buy 4.7 (1 сделок)
+2. Активны:
+Sell - -
+Buy - ОТП банк, Gazprom Bank, Tinkoff Bank, Wildberries, Alfa-Bank RU, VTB, ОТП Банк, Яндекс Банк, Sberbank, На карту Промсвязьбанк (ПСБ), Другой банк РФ, Ozon Bank, Промсвязьбанк (ПСБ), Совкомбанк, Raiffeisen, Юмани
+3. Конверсия 98.34%.
+4. -
+5. Арбитражи - 0 шт.
+6. Инцидентов не найдено
+7. СП в работе на buy, 100 объявлений
+8. Payout_PP_trader_8 - 08.10.2025, Payout_PP_trader_24 - 08.10.2025, Payout_PP_trader_14 - 21.08.2025, Payout_PP_trader_17 - 29.04.2025, Payout_PP_trader_2 - 29.04.2025, Payout_PP_trader_7 - 28.04.2025, Payout_PP_trader_13 - 28.04.2025, Payout_PP_trader_16 - 25.03.2025, Payout_PP_trader_4 - 25.03.2025, Payout_PP_trader_12 - 06.03.2025, Raexchange88 - 29.11.2024
