@@ -46,7 +46,8 @@ git clone https://github.com/den4ickhack/PP-Parser.git
 cd PP-Parser
 ```
 
-# После чего запускаете файл PP-Parser.exe
+# После чего запускаете файл PP-Parser.exe <img width="115" height="33" alt="image" src="https://github.com/user-attachments/assets/21a8544b-b748-4ee6-8555-d9085cca945f" />
+
 # Обращайте внимание на настройки времени и СП перед запуском.
 
 ## 🛠️ Использование 
