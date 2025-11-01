@@ -19,6 +19,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import platform
 import json
+import sys
+import os
 
 BASE_URL_SPEED = "https://servicedesk.service-online.live/traders-speed"
 BASE_URL_ADS = "https://servicedesk.service-online.live/trader/ads"
@@ -28,10 +30,18 @@ BASE_URL_BANK_STATEMENTS = "https://servicedesk.service-online.live/trader/bank-
 LINES_PER_PAGE = 20
 DEBUGGING_PORT = 9222
 
+def get_data_dir():
+    if getattr(sys, 'frozen', False):
+        # Если приложение собрано, то возвращаем папку с exe
+        return os.path.dirname(sys.executable)
+    else:
+        # Иначе возвращаем папку скрипта
+        return os.path.dirname(os.path.abspath(__file__))
+
 def load_service_providers():
     try:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(script_dir, "service_providers.txt")
+        data_dir = get_data_dir()
+        file_path = os.path.join(data_dir, "service_providers.txt")
         
         if not os.path.exists(file_path):
             # Создаем файл, если он не существует
@@ -50,15 +60,15 @@ def load_service_providers():
         return providers
         
     except Exception as e:
-        messagebox.showerror("Ошибка", f"Не удалось загрузить список СП: {str(e)}")
+        print(f"Не удалось загрузить список СП: {str(e)}")
         return {}
-
+        
 SERVICE_PROVIDERS = load_service_providers()
 
 def load_employee_groups():
     try:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(script_dir, "employee_groups.json")
+        data_dir = get_data_dir()
+        file_path = os.path.join(data_dir, "employee_groups.json")
         
         if not os.path.exists(file_path):
             # Создаем файл с группами по умолчанию
@@ -76,9 +86,21 @@ def load_employee_groups():
             return json.load(f)
             
     except Exception as e:
-        messagebox.showerror("Ошибка", f"Не удалось загрузить группы сотрудников: {str(e)}")
+        print(f"Не удалось загрузить группы сотрудников: {str(e)}")
         return {}
 
+def save_employee_groups(groups):
+    try:
+        data_dir = get_data_dir()
+        file_path = os.path.join(data_dir, "employee_groups.json")
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(groups, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        print(f"Не удалось сохранить группы сотрудников: {str(e)}")
+        return False
+        
 def save_employee_groups(groups):
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -888,8 +910,8 @@ class PayportApp:
     def open_service_providers_file(self):
         """Открыть файл service_providers.txt для редактирования"""
         try:
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            file_path = os.path.join(script_dir, "service_providers.txt")
+            data_dir = get_data_dir()
+            file_path = os.path.join(data_dir, "service_providers.txt")
             
             if platform.system() == "Windows":
                 os.startfile(file_path)
